@@ -1,0 +1,34 @@
+// guru.h
+
+#include "inc/hw_memmap.h"
+
+#ifndef _GURU_H_
+#define _GURU_H_ value
+
+
+// Supplied XTAL Frequency
+#define XTAL_HZ 16000000
+
+#define DEBUG_UART			UART0_BASE
+#define UPSTREAM_UART		UART4_BASE
+#define DNSTREAM_UART		UART3_BASE
+#define BAUD_RATE			115200
+
+#define I2C_SLAVE			I2C0_BASE
+#define I2C_MASTER			I2C1_BASE
+
+#define SPI_EEPROM			SSI0_BASE
+#define SPI_SD_CARD			SSI2_BASE
+
+
+
+
+
+
+
+extern void Guru_Init(void);
+
+
+
+
+#endif
