@@ -56,7 +56,9 @@
 #include "driverlib/i2c.h"
 #include "driverlib/ssi.h"
 
+#include "utils/uartstdio.h"
 
+#include "guru.h"
 
 //*****************************************************************************
 //
@@ -90,12 +92,6 @@ __error__(char *pcFilename, uint32_t ui32Line)
 
 
 
-// Value used for XTAL Frequency
-#define XTAL_HZ 16000000
-
-// Define Universal Baud Rate
-#define BAUD_RATE 115200
-
 
 
 
@@ -104,124 +100,37 @@ __error__(char *pcFilename, uint32_t ui32Line)
 
 //*****************************************************************************
 //
-// Toggle a GPIO.
+// Main Function
 //
 //*****************************************************************************
 int
 main(void)
 {
-
-
-
+ 
     //
-    // Set the clocking to run directly from the crystal.
+    // Initialize Guru Interfaces
     //
-    SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ |
-                       SYSCTL_OSC_MAIN);
-
-    //
-    // Coinfigure LED 
-    //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1);
-
-    //
-    // Enable processor interrupts.
-    //
-    //IntMasterEnable();
-
-    //
-    // Configure UART0 As Debug UART
-    // This inteface is used to report actions taken by the device
-    //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
-    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-    UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
-        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-
-    UARTEnable(UART0_BASE);
-
-
-
-    //
-    // Configure upstream and down stream UART interfaces
-    // UART 4 : Upstream 
-    // UART 3 : Downstream
-    // These interfaces are used to configure the device by a master device
-    //
-
-    // UART 4 : Upstream UART
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-    GPIOPinConfigure(GPIO_PC4_U4RX);
-    GPIOPinConfigure(GPIO_PC5_U4TX);
-    GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4 | GPIO_PIN_5);
-    UARTConfigSetExpClk(UART4_BASE, SysCtlClockGet(), 115200,
-        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-    UARTEnable(UART4_BASE);
-
-
-    // UART 3 : Downstream UART
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART3);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-    GPIOPinConfigure(GPIO_PC6_U3RX);
-    GPIOPinConfigure(GPIO_PC7_U3TX);
-    GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_6 | GPIO_PIN_7);
-    UARTConfigSetExpClk(UART3_BASE, SysCtlClockGet(), 115200,
-        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-    UARTEnable(UART3_BASE);
-
-    //
-    // Configure I2C 0 as Slave Bus
-    //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C0);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-    GPIOPinConfigure(GPIO_PB2_I2C0SCL);
-    GPIOPinConfigure(GPIO_PB3_I2C0SDA);
-    GPIOPinTypeI2CSCL(GPIO_PORTB_BASE, GPIO_PIN_2);
-    GPIOPinTypeI2C(GPIO_PORTB_BASE, GPIO_PIN_3);
-    I2CSlaveAddressSet(I2C0_BASE, 1, 0xA5);
-    I2CSlaveEnable(I2C0_BASE);
-
-
-
-    //
-    // Configure I2C 1 as Master Bus
-    //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C1);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    GPIOPinConfigure(GPIO_PA6_I2C1SCL);
-    GPIOPinConfigure(GPIO_PA7_I2C1SDA);
-    GPIOPinTypeI2CSCL(GPIO_PORTA_BASE, GPIO_PIN_6);
-    GPIOPinTypeI2C(GPIO_PORTA_BASE, GPIO_PIN_7);
-    I2CMasterInitExpClk(I2C1_BASE, SysCtlClockGet(), false);
-    I2CMasterEnable(I2C1_BASE);
-
-
-    //
-    // Configure SPI Bus to EEPROM
-    //
-
-    //
-    // Configure SPI Bus to Micro SD slot
-    //
-
-
+    Guru_Init();
 
     //
     // Enter main Loop
     //
 
-char loop_var='A';
-uint8_t dev_addr = 0x27;
+
+
+
+    UARTprintf("Hello");
+    
+
+    char loop_var='A';
+    uint8_t dev_addr = 0x27;
+
+
+
 
     while(1)
     {
 
-        loop_var=UARTCharGet(UART0_BASE);
         UARTCharPut(UART3_BASE, loop_var);
         loop_var=UARTCharGet(UART3_BASE);
 
@@ -232,7 +141,7 @@ uint8_t dev_addr = 0x27;
 
         UARTCharPut(UART4_BASE, loop_var);
         loop_var=UARTCharGet(UART4_BASE);
-        UARTCharPut(UART0_BASE, loop_var);
+      
 
 
     I2CMasterSlaveAddrSet(I2C1_BASE, dev_addr, false);

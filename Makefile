@@ -100,6 +100,7 @@ ${COMPILER}/${PROJECT_NAME}.axf: ${COMPILER}/main.o
 ${COMPILER}/${PROJECT_NAME}.axf: ${COMPILER}/startup_${COMPILER}.o
 ${COMPILER}/${PROJECT_NAME}.axf: ${ROOT}/driverlib/${COMPILER}/libdriver.a	
 ${COMPILER}/${PROJECT_NAME}.axf: ${COMPILER}/uartstdio.o
+${COMPILER}/${PROJECT_NAME}.axf: ${COMPILER}/guru.o
 ${COMPILER}/${PROJECT_NAME}.axf: project.ld
 SCATTERgcc_${PROJECT_NAME}=project.ld
 ENTRY_${PROJECT_NAME}=ResetISR
