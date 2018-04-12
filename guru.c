@@ -40,23 +40,27 @@ void Guru_Init(void)
     //
     // Enable processor interrupts.
     //
-    //IntMasterEnable();
+    IntMasterEnable();
 
     //
     // Configure UART0 As Debug UART
     // This inteface is used to report actions taken by the device
     //
 
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
-    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-    UARTConfigSetExpClk(DEBUG_UART, SysCtlClockGet(), BAUD_RATE,
-        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-		
-    UARTEnable(DEBUG_UART);
-    UARTStdioConfig(DEBUG_UART, BAUD_RATE, SysCtlClockGet());
+//    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+//    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+//    
+//    GPIOPinConfigure(GPIO_PA0_U0RX);
+//    GPIOPinConfigure(GPIO_PA1_U0TX);
+//    
+//    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+//    UARTConfigSetExpClk(DEBUG_UART, SysCtlClockGet(), BAUD_RATE,
+//        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
+//		
+//    UARTEnable(DEBUG_UART);
+//
+//    UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
+//    UARTStdioConfig(DEBUG_UART, BAUD_RATE, SysCtlClockGet());
 
 
     //
@@ -67,25 +71,25 @@ void Guru_Init(void)
     //
 
     // UART 4 : Upstream UART
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-    GPIOPinConfigure(GPIO_PC4_U4RX);
-    GPIOPinConfigure(GPIO_PC5_U4TX);
-    GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4 | GPIO_PIN_5);
-    UARTConfigSetExpClk(UPSTREAM_UART, SysCtlClockGet(), 115200,
-        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-    UARTEnable(UPSTREAM_UART);
+   SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
+   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
+   GPIOPinConfigure(GPIO_PC4_U4RX);
+   GPIOPinConfigure(GPIO_PC5_U4TX);
+   GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4 | GPIO_PIN_5);
+   UARTConfigSetExpClk(UPSTREAM_UART, SysCtlClockGet(), 115200,
+       (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
+   UARTEnable(UPSTREAM_UART);
 
 
-    // UART 3 : Downstream UART
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART3);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-    GPIOPinConfigure(GPIO_PC6_U3RX);
-    GPIOPinConfigure(GPIO_PC7_U3TX);
-    GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_6 | GPIO_PIN_7);
-    UARTConfigSetExpClk(DNSTREAM_UART, SysCtlClockGet(), 115200,
-        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-    UARTEnable(DNSTREAM_UART);
+   // UART 3 : Downstream UART
+   SysCtlPeripheralEnable(SYSCTL_PERIPH_UART3);
+   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
+   GPIOPinConfigure(GPIO_PC6_U3RX);
+   GPIOPinConfigure(GPIO_PC7_U3TX);
+   GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_6 | GPIO_PIN_7);
+   UARTConfigSetExpClk(DNSTREAM_UART, SysCtlClockGet(), 115200,
+       (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
+   UARTEnable(DNSTREAM_UART);
 
     //
     // Configure I2C 0 as Slave Bus
@@ -122,10 +126,35 @@ void Guru_Init(void)
     // Configure SPI Bus to Micro SD slot
     //
 
+}
 
 
+void ConfigureUART(void)
+{
+    //
+    // Enable the GPIO Peripheral used by the UART.
+    //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
 
+    //
+    // Enable UART0
+    //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
 
+    //
+    // Configure GPIO Pins for UART mode.
+    //
+    ROM_GPIOPinConfigure(GPIO_PA0_U0RX);
+    ROM_GPIOPinConfigure(GPIO_PA1_U0TX);
+    ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
 
+    //
+    // Use the internal 16MHz oscillator as the UART clock source.
+    //
+    UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
 
+    //
+    // Initialize the UART for console I/O.
+    //
+    UARTStdioConfig(0, 115200, 16000000);
 }

@@ -20,7 +20,7 @@
 #define SPI_EEPROM			SSI0_BASE
 #define SPI_SD_CARD			SSI2_BASE
 
-
+#define AM2320				0x5C		// 0xB8 >> 1
 
 
 
@@ -28,7 +28,7 @@
 
 extern void Guru_Init(void);
 
-
+extern void ConfigureUART(void);
 
 
 #endif

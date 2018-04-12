@@ -56,6 +56,8 @@
 #include "driverlib/i2c.h"
 #include "driverlib/ssi.h"
 
+#include "driverlib/fpu.h"
+
 #include "utils/uartstdio.h"
 
 #include "guru.h"
@@ -107,51 +109,109 @@ int
 main(void)
 {
  
+
+    //
+    // Enable lazy stacking for interrupt handlers.  This allows floating-point
+    // instructions to be used within interrupt handlers, but at the expense of
+    // extra stack usage.
+    //
+    ROM_FPULazyStackingEnable();
+
+    //
+    // Set the clocking to run directly from the crystal.
+    //
+    ROM_SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ |
+                       SYSCTL_OSC_MAIN);
+
+    //
+    // Enable the GPIO port that is used for the on-board LED.
+    //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+
+    //
+    // Enable the GPIO pins for the LED (PF2 & PF3).
+    //
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
+
+    //
+    // Initialize the UART.
+    //
+    ConfigureUART();
+
+
+    //
+    // Clear screen and introduce yourself
+    //
+    UARTprintf("\033[2J");
+    UARTprintf("Hello\n");
+    
     //
     // Initialize Guru Interfaces
     //
     Guru_Init();
 
-    //
-    // Enter main Loop
-    //
 
 
-
-
-    UARTprintf("Hello");
+    char loop_var='g';
     
-
-    char loop_var='A';
-    uint8_t dev_addr = 0x27;
-
+    int Tempature = 20;
+    int Humidity = 50;
+    int i2c_error_code=0;
+    //
+    // Wake Sensor
+    //
+    I2CMasterSlaveAddrSet(I2C1_BASE, AM2320, false);
+    I2CMasterDataPut(I2C1_BASE, 0);
+    I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_SINGLE_SEND);
+    
+    if ((i2c_error_code=I2CMasterErr(I2C_MASTER)))
+    {
+        UARTprintf("\n## ERROR ##\n");
+        UARTprintf("\nI2c_Master : %x \n",i2c_error_code);
+    }
 
 
 
     while(1)
     {
 
+        
+        loop_var=UARTCharGet(DEBUG_UART);
         UARTCharPut(UART3_BASE, loop_var);
         loop_var=UARTCharGet(UART3_BASE);
 
         GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
         SysCtlDelay(SysCtlClockGet() / 60);
         GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, 0);
-        SysCtlDelay(SysCtlClockGet() / 60);
 
         UARTCharPut(UART4_BASE, loop_var);
         loop_var=UARTCharGet(UART4_BASE);
-      
 
-
-    I2CMasterSlaveAddrSet(I2C1_BASE, dev_addr, false);
-    I2CMasterDataPut(I2C1_BASE, loop_var);
-    I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_SINGLE_SEND);
-
+        
         
 
 
+        I2CMasterSlaveAddrSet(I2C1_BASE, AM2320, false);
         
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterDataPut(I2C1_BASE, 0x03);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_BURST_SEND_START);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterDataPut(I2C1_BASE, 0x00);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_BURST_SEND_CONT);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterDataPut(I2C1_BASE, 0x04);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_BURST_SEND_FINISH);
+
+        i2c_error_code=I2CMasterErr(I2C_MASTER);
+        UARTprintf("\n\t## ERROR ##\t");
+        UARTprintf("\tI2c_Master : %x \t",i2c_error_code);
+
+        UARTprintf("\033[2;0H");
+        UARTprintf("Tempature : %d C\tHumidity : %d", Tempature , Humidity );
 
     }
 
