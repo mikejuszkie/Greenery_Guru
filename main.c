@@ -154,15 +154,10 @@ main(void)
 
     char loop_var='g';
     
-    int Tempature = 20;
-    int Humidity = 50;
+    uint16_t Tempature = 20;
+    uint16_t Humidity = 50;
     int i2c_error_code=0;
-    //
-    // Wake Sensor
-    //
-    I2CMasterSlaveAddrSet(I2C1_BASE, AM2320, false);
-    I2CMasterDataPut(I2C1_BASE, 0);
-    I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_SINGLE_SEND);
+    
     
     if ((i2c_error_code=I2CMasterErr(I2C_MASTER)))
     {
@@ -176,42 +171,23 @@ main(void)
     {
 
         
-        loop_var=UARTCharGet(DEBUG_UART);
+        //loop_var=UARTCharGet(DEBUG_UART);
         UARTCharPut(UART3_BASE, loop_var);
         loop_var=UARTCharGet(UART3_BASE);
 
         GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
-        SysCtlDelay(SysCtlClockGet() / 60);
+        SysCtlDelay(SysCtlClockGet() / 1000);
         GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, 0);
 
         UARTCharPut(UART4_BASE, loop_var);
         loop_var=UARTCharGet(UART4_BASE);
 
-        
-        
 
-
-        I2CMasterSlaveAddrSet(I2C1_BASE, AM2320, false);
-        
-        while(I2CMasterBusy(I2C_MASTER)){}
-        I2CMasterDataPut(I2C1_BASE, 0x03);
-        while(I2CMasterBusy(I2C_MASTER)){}
-        I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_BURST_SEND_START);
-        while(I2CMasterBusy(I2C_MASTER)){}
-        I2CMasterDataPut(I2C1_BASE, 0x00);
-        while(I2CMasterBusy(I2C_MASTER)){}
-        I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_BURST_SEND_CONT);
-        while(I2CMasterBusy(I2C_MASTER)){}
-        I2CMasterDataPut(I2C1_BASE, 0x04);
-        while(I2CMasterBusy(I2C_MASTER)){}
-        I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_BURST_SEND_FINISH);
-
-        i2c_error_code=I2CMasterErr(I2C_MASTER);
-        UARTprintf("\n\t## ERROR ##\t");
-        UARTprintf("\tI2c_Master : %x \t",i2c_error_code);
+        AM2320Read(&Tempature, &Humidity);
 
         UARTprintf("\033[2;0H");
-        UARTprintf("Tempature : %d C\tHumidity : %d", Tempature , Humidity );
+        UARTprintf("Tempature : %dC\nHumidity : %d%%\nI2c_Master : %x", 
+            Tempature/10, Humidity/10, i2c_error_code );
 
     }
 

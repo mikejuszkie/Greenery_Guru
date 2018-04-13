@@ -30,5 +30,6 @@ extern void Guru_Init(void);
 
 extern void ConfigureUART(void);
 
+extern int AM2320Read(uint16_t *p_tempature, uint16_t *p_humidity);
 
 #endif

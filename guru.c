@@ -158,3 +158,70 @@ void ConfigureUART(void)
     //
     UARTStdioConfig(0, 115200, 16000000);
 }
+
+
+
+int AM2320Read(uint16_t *p_tempature, uint16_t *p_humidity)
+{
+		uint16_t Tempature;
+    	uint16_t Humidity;
+	    
+	    //
+        // Wake Sensor
+        //
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterSlaveAddrSet(I2C_MASTER, AM2320, false);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterDataPut(I2C_MASTER, 0);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_SINGLE_SEND);        
+        
+        SysCtlDelay(SysCtlClockGet() / 4000);
+
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterDataPut(I2C_MASTER, 0x03);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_SEND_START);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterDataPut(I2C_MASTER, 0x00);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_SEND_CONT);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterDataPut(I2C_MASTER, 0x04);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_SEND_FINISH);
+
+        SysCtlDelay(SysCtlClockGet() / 4000);
+
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterSlaveAddrSet(I2C_MASTER, AM2320, true);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_START);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_CONT);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_CONT);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        Humidity = I2CMasterDataGet(I2C_MASTER);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_CONT);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        Humidity = Humidity << 8; 
+        Humidity+=I2CMasterDataGet(I2C_MASTER);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_CONT);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        Tempature = I2CMasterDataGet(I2C_MASTER);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_FINISH);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        Tempature = Tempature << 8; 
+        Tempature += I2CMasterDataGet(I2C_MASTER);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        
+        *p_humidity=Humidity;
+    	*p_tempature=Tempature;
+
+        return I2CMasterErr(I2C_MASTER);
+
+}
