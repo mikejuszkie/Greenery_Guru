@@ -143,7 +143,7 @@ main(void)
     // Clear screen and introduce yourself
     //
     UARTprintf("\033[2J");
-    UARTprintf("Hello\n");
+    UARTprintf("Greenery Guru\n\n");
     
     //
     // Initialize Guru Interfaces
@@ -156,15 +156,23 @@ main(void)
     
     uint16_t Tempature = 20;
     uint16_t Humidity = 50;
+    uint16_t Tempature2 = 20;
     int i2c_error_code=0;
-    
-    
+    int error_counter=0;
+    int err_addr_ack=0;
+    int err_data_ack=0;
+    int err_arb_lost=0;
+    int err_clk_tout=0;
+    int total_transactions=0;
+
     if ((i2c_error_code=I2CMasterErr(I2C_MASTER)))
     {
         UARTprintf("\n## ERROR ##\n");
         UARTprintf("\nI2c_Master : %x \n",i2c_error_code);
     }
-
+        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
+        SysCtlDelay(SysCtlClockGet()/1000);
+        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, 0);
 
 
     while(1)
@@ -175,19 +183,61 @@ main(void)
         UARTCharPut(UART3_BASE, loop_var);
         loop_var=UARTCharGet(UART3_BASE);
 
-        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
-        SysCtlDelay(SysCtlClockGet() / 1000);
-        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, 0);
+        SysCtlDelay(SysCtlClockGet() / 300);
+
 
         UARTCharPut(UART4_BASE, loop_var);
         loop_var=UARTCharGet(UART4_BASE);
 
+        i2c_error_code=AM2320Read(&Tempature, &Humidity);
 
-        AM2320Read(&Tempature, &Humidity);
+        total_transactions++;
 
-        UARTprintf("\033[2;0H");
-        UARTprintf("Tempature : %dC\nHumidity : %d%%\nI2c_Master : %x", 
+        if (i2c_error_code)
+        {
+            error_counter++;
+
+            switch (i2c_error_code)
+            {
+                case I2C_MASTER_ERR_ADDR_ACK : err_addr_ack++;
+                case I2C_MASTER_ERR_DATA_ACK : err_data_ack++;
+                case I2C_MASTER_ERR_ARB_LOST : err_arb_lost++;
+                case I2C_MASTER_ERR_CLK_TOUT : err_clk_tout++;
+            }
+        }
+
+        i2c_error_code=DS1621Read(&Tempature2);
+
+        total_transactions++;
+
+        if (i2c_error_code)
+        {
+            error_counter++;
+
+            switch (i2c_error_code)
+            {
+                case I2C_MASTER_ERR_ADDR_ACK : err_addr_ack++;
+                case I2C_MASTER_ERR_DATA_ACK : err_data_ack++;
+                case I2C_MASTER_ERR_ARB_LOST : err_arb_lost++;
+                case I2C_MASTER_ERR_CLK_TOUT : err_clk_tout++;
+            }
+        }
+
+
+        UARTprintf("\033[3;0H");
+        UARTprintf("Tempature : %d C\nHumidity : %d %%\nI2c_Master : %x\n", 
             Tempature/10, Humidity/10, i2c_error_code );
+        UARTprintf("Tempature2 : %d", Tempature2);
+
+        UARTprintf("\n\n############### Counters ###################\n");
+        UARTprintf("Total Transactions \t: \t%d\n", total_transactions);
+        UARTprintf("Total Errors \t\t: \t%d\n", error_counter);
+        UARTprintf("Address ACK \t\t: \t%d\n", err_addr_ack);
+        UARTprintf("Data ACK \t\t: \t%d\n", err_data_ack);
+        UARTprintf("Arb Lost \t\t: \t%d\n", err_arb_lost);
+        UARTprintf("CLK Timeout \t\t: \t%d\n", err_clk_tout);
+
+        SSIDataPut(SSI0_BASE, 0xA53A );
 
     }
 
