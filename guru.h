@@ -5,6 +5,15 @@
 #ifndef _GURU_H_
 #define _GURU_H_
 
+int g_error_counter;
+int g_err_addr_ack;
+int g_err_data_ack;
+int g_err_arb_lost;
+int g_err_clk_tout;
+int g_total_transactions;
+
+uint32_t pui32ADC0Value;
+uint32_t ui32TempValueC;
 
 // Supplied XTAL Frequency
 #define XTAL_HZ 					16000000
@@ -33,6 +42,19 @@
 #define DS1621_STOP_CONVERT			0x22
 
 
+#define EEPROM_ERASE				0b111
+#define EEPROM_ERASE_ALL			0b10010
+#define EEPROM_WRITE_ENABLE			0b10011
+#define EEPROM_WRITE_DISABLE		0b10000
+#define EEPROM_READ 				0b110
+#define EEPROM_WRITE 				0b101
+
+
+
+ 
+
+
+
 extern void Guru_Init(void);
 
 extern void ConfigureUART(void);
@@ -41,5 +63,8 @@ extern int AM2320Read(uint16_t *p_tempature, uint16_t *p_humidity);
 
 extern int DS1621Read(uint16_t *p_tempature);
 
+extern uint32_t CheckLightSensor();
+
+extern int PrintCounters();
 
 #endif

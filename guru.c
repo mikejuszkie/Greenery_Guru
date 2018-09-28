@@ -13,6 +13,7 @@
 #include "driverlib/interrupt.h"
 #include "driverlib/i2c.h"
 #include "driverlib/ssi.h"
+#include "driverlib/adc.h"
 
 #include "utils/uartstdio.h"
 
@@ -20,16 +21,15 @@
 #include "guru.h"
 
 
-
-
 void Guru_Init(void)
 {
 
-    //
-    // Set the clocking to run directly from the crystal.
-    //
-    SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ |
-                       SYSCTL_OSC_MAIN);
+    g_error_counter=0;
+    g_err_addr_ack=0;
+    g_err_data_ack=0;
+    g_err_arb_lost=0;
+    g_err_clk_tout=0;
+    g_total_transactions=0;
 
     //
     // Coinfigure LED 
@@ -42,26 +42,6 @@ void Guru_Init(void)
     //
     IntMasterEnable();
 
-    //
-    // Configure UART0 As Debug UART
-    // This inteface is used to report actions taken by the device
-    //
-
-//    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-//    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-//    
-//    GPIOPinConfigure(GPIO_PA0_U0RX);
-//    GPIOPinConfigure(GPIO_PA1_U0TX);
-//    
-//    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-//    UARTConfigSetExpClk(DEBUG_UART, SysCtlClockGet(), BAUD_RATE,
-//        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-//		
-//    UARTEnable(DEBUG_UART);
-//
-//    UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
-//    UARTStdioConfig(DEBUG_UART, BAUD_RATE, SysCtlClockGet());
-
 
     //
     // Configure upstream and down stream UART interfaces
@@ -70,6 +50,7 @@ void Guru_Init(void)
     // These interfaces are used to configure the device by a master device
     //
 
+UARTprintf("Configuring Upstream UART...");
     // UART 4 : Upstream UART
    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
@@ -79,8 +60,9 @@ void Guru_Init(void)
    UARTConfigSetExpClk(UPSTREAM_UART, SysCtlClockGet(), 115200,
        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
    UARTEnable(UPSTREAM_UART);
+UARTprintf("DONE!\n");
 
-
+UARTprintf("Configuring Downstream UART...");
    // UART 3 : Downstream UART
    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART3);
    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
@@ -90,7 +72,10 @@ void Guru_Init(void)
    UARTConfigSetExpClk(DNSTREAM_UART, SysCtlClockGet(), 115200,
        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
    UARTEnable(DNSTREAM_UART);
+UARTprintf("DONE!\n");
 
+
+UARTprintf("Configuring Slave I2C insterface...");
     //
     // Configure I2C 0 as Slave Bus
     //
@@ -102,9 +87,9 @@ void Guru_Init(void)
     GPIOPinTypeI2C(GPIO_PORTB_BASE, GPIO_PIN_3);
     I2CSlaveAddressSet(I2C_SLAVE, 1, 0xA5);
     I2CSlaveEnable(I2C_SLAVE);
+UARTprintf("DONE!\n");
 
-
-
+UARTprintf("Configuring Master I2C insterface...");
     //
     // Configure I2C 1 as Master Bus
     //
@@ -116,8 +101,9 @@ void Guru_Init(void)
     GPIOPinTypeI2C(GPIO_PORTA_BASE, GPIO_PIN_7);
     I2CMasterInitExpClk(I2C_MASTER, SysCtlClockGet(), false);
     I2CMasterEnable(I2C_MASTER);
+UARTprintf("DONE!\n");
 
-
+UARTprintf("Configuring EEPROM Interface...");
     //
     // Configure SPI Bus to EEPROM
     //
@@ -134,10 +120,34 @@ void Guru_Init(void)
     SSIAdvModeSet(SPI_EEPROM, SSI_ADV_MODE_LEGACY);
     SSIDMAEnable(SPI_EEPROM, SSI_DMA_TX | SSI_DMA_RX);
     SSIEnable(SPI_EEPROM); 
+UARTprintf("DONE!\n");
 
+UARTprintf("Configuring SD Card Interface...");
     //
     // Configure SPI Bus to Micro SD slot
     //
+UARTprintf("DONE!\n");
+
+
+UARTprintf("Configuring Light Sensor...");
+    //
+    // Configure ADC for light sensor
+    //
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+    GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3 | GPIO_PIN_2);
+    ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0 |
+    	ADC_CTL_IE | ADC_CTL_END);
+    ADCSequenceEnable(ADC0_BASE, 0);
+    ADCIntClear(ADC0_BASE, 0);
+UARTprintf("DONE!\n");
+
+
+
+
+
+
 
 }
 
@@ -178,7 +188,7 @@ int AM2320Read(uint16_t *p_tempature, uint16_t *p_humidity)
 {
 	uint16_t Tempature;
     uint16_t Humidity;
-	    
+
     //
     // Wake Sensor
     //
@@ -277,4 +287,57 @@ int DS1621Read(uint16_t *p_tempature)
     *p_tempature=Tempature;
 
     return I2CMasterErr(I2C_MASTER);
+}
+
+
+
+uint32_t CheckLightSensor()
+{
+	uint32_t n=100;
+	uint32_t sum=0;
+
+	for (int i = 0; i < n; ++i)
+	{
+		//
+    	// Trigger the ADC conversion.
+    	//
+    	ADCProcessorTrigger(ADC0_BASE, 0);
+
+    	//
+    	// Wait for conversion to be completed.
+    	//
+    	while(!ADCIntStatus(ADC0_BASE, 0, false)){}
+
+    	//
+    	// Read ADC Value.
+    	//
+    	ADCSequenceDataGet(ADC0_BASE, 0, &pui32ADC0Value);
+
+		sum+=pui32ADC0Value;
+	}
+	
+
+
+	return sum/n;
+}
+
+
+
+
+int PrintCounters()
+{	
+	
+
+	UARTprintf("\n\n############### Counters ###################\n");
+    UARTprintf("Total Transactions \t: \t%d  \n", g_total_transactions);
+    UARTprintf("Total Errors \t\t: \t%d  \n", g_error_counter);
+    UARTprintf("Address ACK \t\t: \t%d  \n", g_err_addr_ack);
+    UARTprintf("Data ACK \t\t\t: \t%d  \n", g_err_data_ack);
+    UARTprintf("Arb Lost \t\t\t: \t%d  \n", g_err_arb_lost);
+    UARTprintf("CLK Timeout \t\t: \t%d  \n", g_err_clk_tout);
+    
+
+
+    return 0;
+
 }
