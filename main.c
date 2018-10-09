@@ -56,8 +56,10 @@
 #include "driverlib/i2c.h"
 #include "driverlib/ssi.h"
 #include "driverlib/adc.h"
-
 #include "driverlib/fpu.h"
+
+#include "fatfs/src/ff.h"
+#include "fatfs/src/diskio.h"
 
 #include "utils/uartstdio.h"
 
@@ -155,6 +157,7 @@ main(void)
     uint16_t Tempature2 = 0;
     int i2c_error_code=0;
     uint32_t brightness = 0;
+    uint16_t moisture = 0;
 
     I2CMasterErr(I2C_MASTER);
 
@@ -172,7 +175,7 @@ main(void)
         UARTCharPut(UART3_BASE, loop_var);
         loop_var=UARTCharGet(UART3_BASE);
 
-        SysCtlDelay(SysCtlClockGet() / 30);
+
 
 
         UARTCharPut(UART4_BASE, loop_var);
@@ -219,7 +222,7 @@ main(void)
         UARTprintf("\033[3;0H");
         UARTprintf("Tempature : %d C  \nHumidity : %d %%  \nI2c_Master : %x  \n"
             ,Tempature/10, Humidity/10, i2c_error_code );
-        UARTprintf("Tempature2 : %d \n", Tempature2);
+        UARTprintf("Tempature2 : %d C\n", Tempature2);
         UARTprintf("brightness : %d  \n", brightness);
 
         ADCProcessorTrigger(ADC0_BASE,0);
@@ -227,11 +230,17 @@ main(void)
         ADCSequenceDataGet(ADC0_BASE, 0, &brightness);
         
         brightness=CheckLightSensor();
-
         UARTprintf("ADC brightness : %4d\n", brightness);
+
+        moisture=CheckMoistureSensor();
+        UARTprintf("moisture : %4d\n", moisture);
+
+        PrintCounters();
+        //SysCtlDelay(SysCtlClockGet() / 600);
 
 
     }
+
 
 
 

@@ -50,7 +50,7 @@ void Guru_Init(void)
     // These interfaces are used to configure the device by a master device
     //
 
-UARTprintf("Configuring Upstream UART...");
+	UARTprintf("Configuring Upstream UART...");
     // UART 4 : Upstream UART
    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
@@ -60,9 +60,9 @@ UARTprintf("Configuring Upstream UART...");
    UARTConfigSetExpClk(UPSTREAM_UART, SysCtlClockGet(), 115200,
        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
    UARTEnable(UPSTREAM_UART);
-UARTprintf("DONE!\n");
+	UARTprintf("DONE!\n");
 
-UARTprintf("Configuring Downstream UART...");
+	UARTprintf("Configuring Downstream UART...");
    // UART 3 : Downstream UART
    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART3);
    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
@@ -72,10 +72,10 @@ UARTprintf("Configuring Downstream UART...");
    UARTConfigSetExpClk(DNSTREAM_UART, SysCtlClockGet(), 115200,
        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
    UARTEnable(DNSTREAM_UART);
-UARTprintf("DONE!\n");
+	UARTprintf("DONE!\n");
 
 
-UARTprintf("Configuring Slave I2C insterface...");
+	UARTprintf("Configuring Slave I2C insterface...");
     //
     // Configure I2C 0 as Slave Bus
     //
@@ -87,9 +87,9 @@ UARTprintf("Configuring Slave I2C insterface...");
     GPIOPinTypeI2C(GPIO_PORTB_BASE, GPIO_PIN_3);
     I2CSlaveAddressSet(I2C_SLAVE, 1, 0xA5);
     I2CSlaveEnable(I2C_SLAVE);
-UARTprintf("DONE!\n");
+	UARTprintf("DONE!\n");
 
-UARTprintf("Configuring Master I2C insterface...");
+	UARTprintf("Configuring Master I2C insterface...");
     //
     // Configure I2C 1 as Master Bus
     //
@@ -101,9 +101,9 @@ UARTprintf("Configuring Master I2C insterface...");
     GPIOPinTypeI2C(GPIO_PORTA_BASE, GPIO_PIN_7);
     I2CMasterInitExpClk(I2C_MASTER, SysCtlClockGet(), false);
     I2CMasterEnable(I2C_MASTER);
-UARTprintf("DONE!\n");
+	UARTprintf("DONE!\n");
 
-UARTprintf("Configuring EEPROM Interface...");
+	UARTprintf("Configuring EEPROM Interface...");
     //
     // Configure SPI Bus to EEPROM
     //
@@ -120,31 +120,55 @@ UARTprintf("Configuring EEPROM Interface...");
     SSIAdvModeSet(SPI_EEPROM, SSI_ADV_MODE_LEGACY);
     SSIDMAEnable(SPI_EEPROM, SSI_DMA_TX | SSI_DMA_RX);
     SSIEnable(SPI_EEPROM); 
-UARTprintf("DONE!\n");
+	UARTprintf("DONE!\n");
 
-UARTprintf("Configuring SD Card Interface...");
+	UARTprintf("Configuring SD Card Interface...");
     //
     // Configure SPI Bus to Micro SD slot
     //
-UARTprintf("DONE!\n");
+	UARTprintf("DONE!\n");
 
 
-UARTprintf("Configuring Light Sensor...");
+	UARTprintf("Configuring Light Sensor...");
     //
     // Configure ADC for light sensor
     //
     SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
-    GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3 | GPIO_PIN_2);
+    GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3 );
     ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
     ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0 |
     	ADC_CTL_IE | ADC_CTL_END);
     ADCSequenceEnable(ADC0_BASE, 0);
     ADCIntClear(ADC0_BASE, 0);
-UARTprintf("DONE!\n");
+	UARTprintf("DONE!\n");
+
+
+	UARTprintf("Configuring moiture Sensor...");
+    //
+    // Configure ADC for moisture sensor
+    //
+    //SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC1);
+    //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+    //GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_2);
+    //ADCSequenceConfigure(ADC1_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
+    //ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH1 |
+    //	ADC_CTL_IE | ADC_CTL_END);
+    //ADCSequenceEnable(ADC1_BASE, 0);
+    //ADCIntClear(ADC1_BASE, 0);
+	
+    //
+    //	Configure Driver Moisture sensor
+    //
+
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+    GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_1);
+    GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_2);
 
 
 
+
+	UARTprintf("DONE!\n");
 
 
 
@@ -293,7 +317,7 @@ int DS1621Read(uint16_t *p_tempature)
 
 uint32_t CheckLightSensor()
 {
-	uint32_t n=100;
+	uint32_t n=10000;
 	uint32_t sum=0;
 
 	for (int i = 0; i < n; ++i)
@@ -324,6 +348,38 @@ uint32_t CheckLightSensor()
 
 
 
+uint16_t CheckMoistureSensor()
+{
+
+	uint16_t moiture;
+
+	// set drive pin high
+	GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, GPIO_PIN_1);
+
+	for (int i = 0; i <= 10000; ++i)
+	{
+		moiture = i;
+
+		// check status of sense pin
+		if (GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_2))
+		{
+			break;
+		}
+
+		//SysCtlDelay(1000);
+
+	}
+
+	// set drive pin low
+	GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, false);
+
+	return moiture;
+
+}
+
+
+
+
 int PrintCounters()
 {	
 	
@@ -332,8 +388,8 @@ int PrintCounters()
     UARTprintf("Total Transactions \t: \t%d  \n", g_total_transactions);
     UARTprintf("Total Errors \t\t: \t%d  \n", g_error_counter);
     UARTprintf("Address ACK \t\t: \t%d  \n", g_err_addr_ack);
-    UARTprintf("Data ACK \t\t\t: \t%d  \n", g_err_data_ack);
-    UARTprintf("Arb Lost \t\t\t: \t%d  \n", g_err_arb_lost);
+    UARTprintf("Data ACK \t\t: \t%d  \n", g_err_data_ack);
+    UARTprintf("Arb Lost \t\t: \t%d  \n", g_err_arb_lost);
     UARTprintf("CLK Timeout \t\t: \t%d  \n", g_err_clk_tout);
     
 

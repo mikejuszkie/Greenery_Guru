@@ -65,6 +65,8 @@ extern int DS1621Read(uint16_t *p_tempature);
 
 extern uint32_t CheckLightSensor();
 
+extern uint16_t CheckMoistureSensor();
+
 extern int PrintCounters();
 
 #endif
