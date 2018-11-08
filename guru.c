@@ -17,6 +17,8 @@
 
 #include "utils/uartstdio.h"
 
+#include "fatfs/src/ff.h"
+#include "fatfs/src/diskio.h"
 
 #include "guru.h"
 
@@ -103,9 +105,9 @@ void Guru_Init(void)
     I2CMasterEnable(I2C_MASTER);
 	UARTprintf("DONE!\n");
 
-	UARTprintf("Configuring EEPROM Interface...");
+	UARTprintf("Configuring SD Card Interface...");
     //
-    // Configure SPI Bus to EEPROM
+    // Configure SPI Bus to the SDCARD
     //
     SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
@@ -115,17 +117,32 @@ void Guru_Init(void)
     GPIOPinConfigure(GPIO_PA5_SSI0TX);
     GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 |
     	GPIO_PIN_5);
+    SSIConfigSetExpClk(SPI_SD_CARD, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0, 
+                        SSI_MODE_MASTER, 2000000, 16);
+    SSIAdvModeSet(SPI_SD_CARD, SSI_ADV_MODE_LEGACY);
+    SSIDMAEnable(SPI_SD_CARD, SSI_DMA_TX | SSI_DMA_RX);
+    SSIEnable(SPI_SD_CARD); 
+	UARTprintf("DONE!\n");
+
+
+
+	UARTprintf("Configuring EEPROM Interface...");
+    //
+    // Configure SPI Bus to EEPROM
+    //
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI2);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+    GPIOPinConfigure(GPIO_PB4_SSI2CLK);
+    GPIOPinConfigure(GPIO_PB5_SSI2FSS);
+    GPIOPinConfigure(GPIO_PB6_SSI2RX);
+    GPIOPinConfigure(GPIO_PB7_SSI2TX);
+    GPIOPinTypeSSI(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 |
+    	GPIO_PIN_7);
     SSIConfigSetExpClk(SPI_EEPROM, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0, 
                         SSI_MODE_MASTER, 2000000, 16);
     SSIAdvModeSet(SPI_EEPROM, SSI_ADV_MODE_LEGACY);
     SSIDMAEnable(SPI_EEPROM, SSI_DMA_TX | SSI_DMA_RX);
     SSIEnable(SPI_EEPROM); 
-	UARTprintf("DONE!\n");
-
-	UARTprintf("Configuring SD Card Interface...");
-    //
-    // Configure SPI Bus to Micro SD slot
-    //
 	UARTprintf("DONE!\n");
 
 
@@ -397,3 +414,5 @@ int PrintCounters()
     return 0;
 
 }
+
+

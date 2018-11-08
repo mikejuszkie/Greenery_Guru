@@ -61,6 +61,7 @@
 #include "fatfs/src/ff.h"
 #include "fatfs/src/diskio.h"
 
+
 #include "utils/uartstdio.h"
 
 #include "guru.h"
@@ -96,6 +97,11 @@ __error__(char *pcFilename, uint32_t ui32Line)
 {
 }
 #endif
+
+
+
+
+
 
 
 
@@ -215,8 +221,12 @@ main(void)
             }
         }
 
-        SSIDataPut(SSI0_BASE, 0x9000 );
-        SSIDataGet(SSI0_BASE, &brightness);
+
+        f_mount(0, &g_sFatFs);
+        f_opendir(&g_sDirObject, g_pcCwdBuf);
+        
+        SSIDataPut(SPI_EEPROM, 0x9000 );
+        SSIDataGet(SPI_EEPROM, &brightness);
 
 
         UARTprintf("\033[3;0H");

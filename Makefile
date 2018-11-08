@@ -63,6 +63,7 @@ include ${ROOT}/makedefs
 # Where to find source files that do not live in this directory.
 #
 VPATH=./utils
+VPATH+=./third_party
 VPATH+=./third_party/fatfs/src/option
 VPATH+=./third_party/fatfs/port
 VPATH+=./third_party/fatfs/src
@@ -72,6 +73,9 @@ VPATH+=./third_party/fatfs/src
 #
 IPATH=./
 IPATH+=./third_party
+IPATH+=./third_party/fatfs/src/option
+IPATH+=./third_party/fatfs/port
+IPATH+=./third_party/fatfs/src
 
 #
 # The default rule, which causes the project example to be built.
@@ -89,7 +93,7 @@ flash:
 # The rule to clean out all the build products.
 #
 clean:
-	@rm -rf ${COMPILER} ${wildcard *~}
+	@rm -rf ${COMPILER} ${wildcard *~};clear
 
 #
 # The rule to create the target directory.
@@ -104,6 +108,8 @@ ${COMPILER}/${PROJECT_NAME}.axf: ${COMPILER}/main.o
 ${COMPILER}/${PROJECT_NAME}.axf: ${COMPILER}/startup_${COMPILER}.o
 ${COMPILER}/${PROJECT_NAME}.axf: ${ROOT}/driverlib/${COMPILER}/libdriver.a	
 ${COMPILER}/${PROJECT_NAME}.axf: ${COMPILER}/uartstdio.o
+${COMPILER}/${PROJECT_NAME}.axf: ${COMPILER}/ff.o
+${COMPILER}/${PROJECT_NAME}.axf: ${COMPILER}/mmc-dk-tm4c123g.o
 ${COMPILER}/${PROJECT_NAME}.axf: ${COMPILER}/guru.o
 ${COMPILER}/${PROJECT_NAME}.axf: project.ld
 SCATTERgcc_${PROJECT_NAME}=project.ld
