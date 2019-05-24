@@ -55,6 +55,8 @@ uint32_t ui32TempValueC;
 
 extern void Guru_Init(void);
 
+extern int I2C_Scan(void);
+
 extern void ConfigureUART(void);
 
 extern int AM2320Read(uint16_t *p_tempature, uint16_t *p_humidity);

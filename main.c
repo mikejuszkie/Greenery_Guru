@@ -306,6 +306,13 @@ main(void)
     Guru_Init();
     SysCtlDelay(SysCtlClockGet()/3);
 
+    //
+    // Scan For I2C devices 
+    //
+    I2C_Scan();
+    SysCtlDelay(SysCtlClockGet()/3);
+
+
     char loop_var='g';
     
     uint16_t Tempature = 0;
@@ -337,18 +344,26 @@ main(void)
     while(1)
     {
 
-        
+        UARTprintf("\033[2J");
+        int test_var=1;
+        UARTprintf("Test %d", test_var++);
         //loop_var=UARTCharGet(DEBUG_UART);
         UARTCharPut(UART3_BASE, loop_var);
-        loop_var=UARTCharGet(UART3_BASE);
+        //loop_var=UARTCharGet(UART3_BASE);
 
 
+        
+        UARTprintf("Test %d", test_var++);
 
 
         UARTCharPut(UART4_BASE, loop_var);
-        loop_var=UARTCharGet(UART4_BASE);
+        //loop_var=UARTCharGet(UART4_BASE);
+
+        UARTprintf("Test %d", test_var++);
 
         i2c_error_code=AM2320Read(&Tempature, &Humidity);
+
+        UARTprintf("Test %d", test_var++);
 
         g_total_transactions++;
 

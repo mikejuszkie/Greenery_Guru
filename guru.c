@@ -193,6 +193,45 @@ void Guru_Init(void)
 }
 
 
+int I2C_Scan(void)
+{
+
+    //
+    // Clear screen before showing devices found
+    //
+    UARTprintf("\033[2J");
+
+    int devices_found = 0;
+
+    UARTprintf("Scanning I2C Bus\n\n");
+
+    for (int i = 0; i < 128; ++i)
+    {
+
+
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterSlaveAddrSet(I2C_MASTER, i, false);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterDataPut(I2C_MASTER, 0);
+        while(I2CMasterBusy(I2C_MASTER)){}
+        I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_SINGLE_SEND);  
+
+        while(I2CMasterBusy(I2C_MASTER)){}
+        if (!I2CMasterErr(I2C_MASTER))
+        {
+            devices_found++;
+
+            UARTprintf("Device found\t%x \n", i);
+        }
+
+
+    }
+
+    UARTprintf("%d devices found", devices_found);
+
+    return devices_found;
+}
+
 void ConfigureUART(void)
 {
     //
@@ -409,8 +448,6 @@ int PrintCounters()
     UARTprintf("Arb Lost \t\t: \t%d  \n", g_err_arb_lost);
     UARTprintf("CLK Timeout \t\t: \t%d  \n", g_err_clk_tout);
     
-
-
     return 0;
 
 }
