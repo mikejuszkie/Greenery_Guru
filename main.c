@@ -310,8 +310,8 @@ main(void)
     
     uint16_t Tempature = 0;
     uint16_t Humidity = 0;
-    uint16_t Tempature2 = 0;
-    int i2c_error_code=0;
+    uint8_t Tempature2 = 0;
+    uint16_t i2c_error_code=0;
     uint32_t brightness = 0;
     uint16_t moisture = 0;
 
@@ -323,6 +323,8 @@ main(void)
 
     UARTprintf("\033[2J");
     UARTprintf("Greenery Guru\n\n");
+    
+    /*
     iFResult = f_mount(0, &g_sFatFs);
     if(iFResult != FR_OK)
     {
@@ -334,51 +336,47 @@ main(void)
         UARTprintf("f_mount success!\n");
     }
 
+    */
+
     while(1)
     {
 
         
         //loop_var=UARTCharGet(DEBUG_UART);
-        UARTCharPut(UART3_BASE, loop_var);
-        loop_var=UARTCharGet(UART3_BASE);
+        //UARTCharPutNonBlocking(UART3_BASE, loop_var);
+        //loop_var=UARTCharGet(UART3_BASE);
 
 
 
 
-        UARTCharPut(UART4_BASE, loop_var);
-        loop_var=UARTCharGet(UART4_BASE);
+        UARTCharPutNonBlocking(UART4_BASE, loop_var);
+        //loop_var=UARTCharGet(UART4_BASE);
 
-        i2c_error_code=AM2320Read(&Tempature, &Humidity);
-
-        g_total_transactions++;
-
-        if (i2c_error_code)
-        {
-            g_error_counter++;
-
-            switch (i2c_error_code)
-            {
-                case I2C_MASTER_ERR_ADDR_ACK : g_err_addr_ack++;
-                case I2C_MASTER_ERR_DATA_ACK : g_err_data_ack++;
-                case I2C_MASTER_ERR_ARB_LOST : g_err_arb_lost++;
-                case I2C_MASTER_ERR_CLK_TOUT : g_err_clk_tout++;
-            }
-        }
 
         i2c_error_code=DS1621Read(&Tempature2);
+UARTprintf("I2C Error Code after ds read : %X\n", i2c_error_code);
+        g_total_transactions++;
 
+        i2c_error_code=SI7006Read(&Tempature, &Humidity);
+UARTprintf("I2C Error Code after si read : %X\n", i2c_error_code);
+UARTprintf("exit code: %d",i2c_error_code);
         g_total_transactions++;
 
         if (i2c_error_code)
         {
             g_error_counter++;
 
-            switch (i2c_error_code)
+            if(i2c_error_code)
             {
-                case I2C_MASTER_ERR_ADDR_ACK : g_err_addr_ack++;
-                case I2C_MASTER_ERR_DATA_ACK : g_err_data_ack++;
-                case I2C_MASTER_ERR_ARB_LOST : g_err_arb_lost++;
-                case I2C_MASTER_ERR_CLK_TOUT : g_err_clk_tout++;
+                if(i2c_error_code & I2C_MASTER_ERR_ADDR_ACK)
+                    g_err_addr_ack++;
+                if(i2c_error_code & I2C_MASTER_ERR_DATA_ACK)
+                    g_err_data_ack++;
+                if(i2c_error_code & I2C_MASTER_ERR_ARB_LOST)
+                    g_err_arb_lost++;
+                if(i2c_error_code & I2C_MASTER_ERR_CLK_TOUT)
+                    g_err_clk_tout++;
+
             }
         }
 
@@ -392,7 +390,7 @@ main(void)
 
         UARTprintf("\033[4;0H");
         UARTprintf("Tempature : %d C  \nHumidity : %d %%  \nI2c_Master : %x  \n"
-            ,Tempature/10, Humidity/10, i2c_error_code );
+            ,Tempature, Humidity, i2c_error_code );
         UARTprintf("Tempature2 : %d C\n", Tempature2);
         UARTprintf("brightness : %d  \n", brightness);
 
@@ -406,9 +404,10 @@ main(void)
         moisture=CheckMoistureSensor();
         UARTprintf("moisture : %4d\n", moisture);
 
-        PrintCounters();
-        //SysCtlDelay(SysCtlClockGet() / 600);
 
+        PrintCounters();
+        
+        //SysCtlDelay(SysCtlClockGet() / 600);
 
     }
 
