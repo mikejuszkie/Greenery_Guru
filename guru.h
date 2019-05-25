@@ -31,6 +31,9 @@ uint32_t ui32TempValueC;
 #define SPI_EEPROM					SSI2_BASE
 #define SPI_SD_CARD					SSI0_BASE
 
+#define I2C_READ					true
+#define I2C_WRITE					false
+
 #define AM2320						0x5C		// 0xB8 >> 1
 
 #define DS1621 						0x48
@@ -42,6 +45,22 @@ uint32_t ui32TempValueC;
 #define DS1621_READ_SLOPE			0xA9
 #define DS1621_START_CONVERT		0xEE
 #define DS1621_STOP_CONVERT			0x22
+
+
+#define SI7006						0x40		// 0x80 >> 1
+#define SI7006_MEASURE_RH_HOLD		0xE5
+#define SI7006_MEASURE_RH 			0xF5
+#define SI7006_MEASURE_TEMP_HOLD 	0xE3
+#define SI7006_MEASURE_TEMP 		0xF3
+#define SI7006_READ_TEMP 			0xE0
+#define SI7006_RESET 				0xFE 
+#define SI7006_WRITE_USER_REG 		0xE6
+#define SI7006_READ_USER_REG 		0xE7
+#define SI7006_WRITE_HEAT_CON_REG 	0x51
+#define SI7006_READ_HEAT_CON_REG 	0x11
+#define SI7006_READ_ID_REG_1 		0xFA
+#define SI7006_READ_ID_REG_2 		0xFC
+#define SI7006_READ_FW_VERSION 		0x84
 
 
 #define EEPROM_ERASE				0b111
@@ -62,6 +81,8 @@ extern void ConfigureUART(void);
 extern int AM2320Read(uint16_t *p_tempature, uint16_t *p_humidity);
 
 extern int DS1621Read(uint16_t *p_tempature);
+
+extern int SI7006Read(uint16_t *p_tempature, uint16_t *p_humidity);
 
 extern uint32_t CheckLightSensor();
 

@@ -101,7 +101,7 @@ void Guru_Init(void)
     GPIOPinConfigure(GPIO_PA7_I2C1SDA);
     GPIOPinTypeI2CSCL(GPIO_PORTA_BASE, GPIO_PIN_6);
     GPIOPinTypeI2C(GPIO_PORTA_BASE, GPIO_PIN_7);
-    I2CMasterInitExpClk(I2C_MASTER, SysCtlClockGet(), false);
+    I2CMasterInitExpClk(I2C_MASTER, SysCtlClockGet() * 5, false);
     I2CMasterEnable(I2C_MASTER);
 	UARTprintf("DONE!\n");
 
@@ -221,7 +221,7 @@ int I2C_Scan(void)
         {
             devices_found++;
 
-            UARTprintf("Device found\t%x \n", i);
+            UARTprintf("Device found\t0x%x \n", i);
         }
 
 
@@ -328,6 +328,94 @@ int AM2320Read(uint16_t *p_tempature, uint16_t *p_humidity)
 
 
 
+
+int SI7006Read(uint16_t *p_tempature, uint16_t *p_humidity)
+{
+    uint16_t Tempature;
+    uint16_t Humidity;
+
+
+    //
+    // Reset Sensor before measuriment
+    // 
+    while(I2CMasterBusy(I2C_MASTER)){}
+    if (I2CMasterErr(I2C_MASTER)){return I2CMasterErr(I2C_MASTER);}
+    I2CMasterSlaveAddrSet(I2C_MASTER, SI7006, I2C_WRITE);
+    while(I2CMasterBusy(I2C_MASTER)){}
+    if (I2CMasterErr(I2C_MASTER)){return I2CMasterErr(I2C_MASTER);}
+    I2CMasterDataPut(I2C_MASTER, SI7006_RESET);
+    while(I2CMasterBusy(I2C_MASTER)){}
+    if (I2CMasterErr(I2C_MASTER)){return I2CMasterErr(I2C_MASTER);}
+    I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_SINGLE_SEND); 
+
+    //
+    // Make Humididity Measurement 
+    //
+    while(I2CMasterBusy(I2C_MASTER)){}
+    if (I2CMasterErr(I2C_MASTER)){return I2CMasterErr(I2C_MASTER);}
+    I2CMasterSlaveAddrSet(I2C_MASTER, SI7006, I2C_WRITE);
+    UARTprintf("Testing this worked\n" );
+    while(I2CMasterBusy(I2C_MASTER)){}
+    if (I2CMasterErr(I2C_MASTER)){return I2CMasterErr(I2C_MASTER);}
+    I2CMasterDataPut(I2C_MASTER, SI7006_MEASURE_RH);
+    while(I2CMasterBusy(I2C_MASTER)){}
+    I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_START);        
+
+    //
+    // Read Humidity Value
+    //
+    while(I2CMasterBusy(I2C_MASTER)){}
+    I2CMasterSlaveAddrSet(I2C_MASTER, SI7006, I2C_READ);
+    while(I2CMasterBusy(I2C_MASTER)){}
+    I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_START);
+    while(I2CMasterBusy(I2C_MASTER)){}
+    Humidity = I2CMasterDataGet(I2C_MASTER);
+    while(I2CMasterBusy(I2C_MASTER)){}
+    I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_FINISH);
+
+    while(I2CMasterBusy(I2C_MASTER)){}
+    Humidity = Humidity << 8; 
+    Humidity+=I2CMasterDataGet(I2C_MASTER);
+    Humidity = Humidity >> 2;
+
+    //
+    // Make Tempature Measurement 
+    //
+    while(I2CMasterBusy(I2C_MASTER)){}
+    I2CMasterSlaveAddrSet(I2C_MASTER, SI7006, I2C_WRITE);
+    while(I2CMasterBusy(I2C_MASTER)){}
+    I2CMasterDataPut(I2C_MASTER, SI7006_READ_TEMP);
+    while(I2CMasterBusy(I2C_MASTER)){}
+    I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_SINGLE_SEND);        
+
+    //
+    // Read Tempature Value
+    // 
+    while(I2CMasterBusy(I2C_MASTER)){}
+    I2CMasterSlaveAddrSet(I2C_MASTER, SI7006, I2C_READ);
+    while(I2CMasterBusy(I2C_MASTER)){}
+    I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_START);
+    
+    while(I2CMasterBusy(I2C_MASTER)){}
+    Tempature = I2CMasterDataGet(I2C_MASTER);
+    while(I2CMasterBusy(I2C_MASTER)){}
+    I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_FINISH);
+
+    while(I2CMasterBusy(I2C_MASTER)){}
+    Tempature = Tempature << 8; 
+    Tempature += I2CMasterDataGet(I2C_MASTER);
+    Tempature = Tempature >> 2; 
+
+    *p_humidity=(( 125 * Humidity ) / 65536 ) - 6 ;
+    *p_tempature=(( 175.72 * Tempature ) / 65536 ) - 46.85;
+
+    return I2CMasterErr(I2C_MASTER);
+
+}
+
+
+
+
 int DS1621Read(uint16_t *p_tempature)
 {
 
@@ -339,19 +427,18 @@ int DS1621Read(uint16_t *p_tempature)
     I2CMasterDataPut(I2C_MASTER, DS1621_START_CONVERT);
     while(I2CMasterBusy(I2C_MASTER)){}
     I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_SINGLE_SEND);
-
 	while(I2CMasterBusy(I2C_MASTER)){}
+
     I2CMasterDataPut(I2C_MASTER, DS1621_STOP_CONVERT);
     while(I2CMasterBusy(I2C_MASTER)){}
     I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_SINGLE_SEND);
-	
 	while(I2CMasterBusy(I2C_MASTER)){}
+
     I2CMasterDataPut(I2C_MASTER, DS1621_READ_TEMP);
     while(I2CMasterBusy(I2C_MASTER)){}
     I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_SINGLE_SEND);
-
-
     while(I2CMasterBusy(I2C_MASTER)){}
+
     I2CMasterSlaveAddrSet(I2C_MASTER, DS1621, true);
     while(I2CMasterBusy(I2C_MASTER)){}
     I2CMasterControl(I2C_MASTER, I2C_MASTER_CMD_BURST_RECEIVE_START);
@@ -365,6 +452,9 @@ int DS1621Read(uint16_t *p_tempature)
     while(I2CMasterBusy(I2C_MASTER)){}
     
     *p_tempature=Tempature;
+
+
+
 
     return I2CMasterErr(I2C_MASTER);
 }
