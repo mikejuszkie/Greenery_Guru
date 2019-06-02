@@ -44,6 +44,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+
 #include "inc/hw_memmap.h"
 #include "driverlib/debug.h"
 #include "driverlib/gpio.h"
@@ -66,168 +68,6 @@
 
 #include "guru.h"
 
-
-
-
-
-//*****************************************************************************
-//
-// Defines the size of the buffers that hold the path, or temporary data from
-// the SD card.  There are two buffers allocated of this size.  The buffer size
-// must be large enough to hold the longest expected full path name, including
-// the file name, and a trailing null character.
-//
-//*****************************************************************************
-#define PATH_BUF_SIZE           80
-
-//*****************************************************************************
-//
-// Defines the size of the buffer that holds the command line.
-//
-//*****************************************************************************
-#define CMD_BUF_SIZE            64
-
-//*****************************************************************************
-//
-// This buffer holds the full path to the current working directory.  Initially
-// it is root ("/").
-//
-//*****************************************************************************
-static char g_pcCwdBuf[PATH_BUF_SIZE] = "/";
-
-//*****************************************************************************
-//
-// A temporary data buffer used when manipulating file paths, or reading data
-// from the SD card.
-//
-//*****************************************************************************
-static char g_pcTmpBuf[PATH_BUF_SIZE];
-
-//*****************************************************************************
-//
-// The buffer that holds the command line.
-//
-//*****************************************************************************
-static char g_pcCmdBuf[CMD_BUF_SIZE];
-//*****************************************************************************
-//
-// The following are data structures used by FatFs.
-//
-//*****************************************************************************
-static FATFS g_sFatFs;
-static DIR g_sDirObject;
-static FILINFO g_sFileInfo;
-static FIL g_sFileObject;
-
-
-//*****************************************************************************
-//
-// A structure that holds a mapping between an FRESULT numerical code, and a
-// string representation.  FRESULT codes are returned from the FatFs FAT file
-// system driver.
-//
-//*****************************************************************************
-typedef struct
-{
-    FRESULT iFResult;
-    char *pcResultStr;
-}
-tFResultString;
-
-//*****************************************************************************
-//
-// A macro to make it easy to add result codes to the table.
-//
-//*****************************************************************************
-#define FRESULT_ENTRY(f)        { (f), (#f) }
-
-//*****************************************************************************
-//
-// A table that holds a mapping between the numerical FRESULT code and it's
-// name as a string.  This is used for looking up error codes for printing to
-// the console.
-//
-//*****************************************************************************
-tFResultString g_psFResultStrings[] =
-{
-    FRESULT_ENTRY(FR_OK),
-    FRESULT_ENTRY(FR_DISK_ERR),
-    FRESULT_ENTRY(FR_INT_ERR),
-    FRESULT_ENTRY(FR_NOT_READY),
-    FRESULT_ENTRY(FR_NO_FILE),
-    FRESULT_ENTRY(FR_NO_PATH),
-    FRESULT_ENTRY(FR_INVALID_NAME),
-    FRESULT_ENTRY(FR_DENIED),
-    FRESULT_ENTRY(FR_EXIST),
-    FRESULT_ENTRY(FR_INVALID_OBJECT),
-    FRESULT_ENTRY(FR_WRITE_PROTECTED),
-    FRESULT_ENTRY(FR_INVALID_DRIVE),
-    FRESULT_ENTRY(FR_NOT_ENABLED),
-    FRESULT_ENTRY(FR_NO_FILESYSTEM),
-    FRESULT_ENTRY(FR_MKFS_ABORTED),
-    FRESULT_ENTRY(FR_TIMEOUT),
-    FRESULT_ENTRY(FR_LOCKED),
-    FRESULT_ENTRY(FR_NOT_ENOUGH_CORE),
-    FRESULT_ENTRY(FR_TOO_MANY_OPEN_FILES),
-    FRESULT_ENTRY(FR_INVALID_PARAMETER),
-};
-
-//*****************************************************************************
-//
-// A macro that holds the number of result codes.
-//
-//*****************************************************************************
-#define NUM_FRESULT_CODES       (sizeof(g_psFResultStrings) /                 \
-                                 sizeof(tFResultString))
-
- 
-//*****************************************************************************
-//
-// This function returns a string representation of an error code that was
-// returned from a function call to FatFs.  It can be used for printing human
-// readable error messages.
-//
-//*****************************************************************************
-const char *
-StringFromFResult(FRESULT iFResult)
-{
-    uint_fast8_t ui8Idx;
-
-    //
-    // Enter a loop to search the error code table for a matching error code.
-    //
-    for(ui8Idx = 0; ui8Idx < NUM_FRESULT_CODES; ui8Idx++)
-    {
-        //
-        // If a match is found, then return the string name of the error code.
-        //
-        if(g_psFResultStrings[ui8Idx].iFResult == iFResult)
-        {
-            return(g_psFResultStrings[ui8Idx].pcResultStr);
-        }
-    }
-
-    //
-    // At this point no matching code was found, so return a string indicating
-    // an unknown error.
-    //
-    return("UNKNOWN ERROR CODE");
-}
-
-//*****************************************************************************
-//
-// This is the handler for this SysTick interrupt.  FatFs requires a timer tick
-// every 10 ms for internal timing purposes.
-//
-//*****************************************************************************
-void
-SysTickHandler(void)
-{
-    //
-    // Call the FatFs tick timer.
-    //
-    disk_timerproc();
-}
 
 
 
@@ -262,8 +102,6 @@ int
 main(void)
 {
  
-    int nStatus;
-    FRESULT iFResult;
 
     //
     // Enable lazy stacking for interrupt handlers.  This allows floating-point
@@ -311,17 +149,19 @@ main(void)
     // Scan For I2C devices 
     //
     I2C_Scan();
-    SysCtlDelay(SysCtlClockGet()/3);
+    SysCtlDelay(SysCtlClockGet() / 5 );
 
 
     char loop_var='g';
     
-    uint16_t Tempature = 0;
+    int16_t Tempature = 0;
+    //float Tempature = 0;
     uint16_t Humidity = 0;
-    uint8_t Tempature2 = 0;
+    int8_t Tempature2 = 0;
     uint16_t i2c_error_code=0;
     uint32_t brightness = 0;
     uint16_t moisture = 0;
+
 
     I2CMasterErr(I2C_MASTER);
 
@@ -350,56 +190,40 @@ main(void)
     {
 
         
-        //loop_var=UARTCharGet(DEBUG_UART);
-        //UARTCharPutNonBlocking(UART3_BASE, loop_var);
-        //loop_var=UARTCharGet(UART3_BASE);
-
-
-
 
         UARTCharPutNonBlocking(UART4_BASE, loop_var);
-        //loop_var=UARTCharGet(UART4_BASE);
 
 
-        i2c_error_code=DS1621Read(&Tempature2);
-UARTprintf("I2C Error Code after ds read : %X\n", i2c_error_code);
-        g_total_transactions++;
-
-        i2c_error_code=SI7006Read(&Tempature, &Humidity);
-UARTprintf("I2C Error Code after si read : %X\n", i2c_error_code);
-UARTprintf("exit code: %d",i2c_error_code);
-        g_total_transactions++;
-
-        if (i2c_error_code)
+        if (g_i2c_device_pres & DS1621_PRES)
         {
-            g_error_counter++;
-
-            if(i2c_error_code)
-            {
-                if(i2c_error_code & I2C_MASTER_ERR_ADDR_ACK)
-                    g_err_addr_ack++;
-                if(i2c_error_code & I2C_MASTER_ERR_DATA_ACK)
-                    g_err_data_ack++;
-                if(i2c_error_code & I2C_MASTER_ERR_ARB_LOST)
-                    g_err_arb_lost++;
-                if(i2c_error_code & I2C_MASTER_ERR_CLK_TOUT)
-                    g_err_clk_tout++;
-
-            }
+            i2c_error_code=DS1621Read(&Tempature2);
+            g_total_transactions++;
         }
 
+        I2C_Error_Check(i2c_error_code);
+
+        if (g_i2c_device_pres & SI7006_PRES)
+        {
+            i2c_error_code=SI7006Read(&Tempature, &Humidity);
+            g_total_transactions++;
+        }
+
+
+        I2C_Error_Check(i2c_error_code);
 
 
         //f_opendir(&g_sDirObject, g_pcCwdBuf);
         
         SSIDataPut(SPI_EEPROM, 0x9000 );
-        SSIDataGet(SPI_EEPROM, &brightness);
+        //SSIDataGet(SPI_EEPROM, &brightness);
 
 
-        UARTprintf("\033[4;0H");
-        UARTprintf("Tempature : %d C  \nHumidity : %d %%  \nI2c_Master : %x  \n"
-            ,Tempature, Humidity, i2c_error_code );
-        UARTprintf("Tempature2 : %d C\n", Tempature2);
+        UARTprintf("\033[2J");
+        UARTprintf("Greenery Guru\n\n");
+        UARTprintf("Tempature : %d C\n", Tempature);
+        UARTprintf("Humidity : %d %%\n", Humidity);
+
+        UARTprintf("Soil Tempature : %d C\n", Tempature2);
         UARTprintf("brightness : %d  \n", brightness);
 
         ADCProcessorTrigger(ADC0_BASE,0);
@@ -410,12 +234,14 @@ UARTprintf("exit code: %d",i2c_error_code);
         UARTprintf("ADC brightness : %4d\n", brightness);
 
         moisture=CheckMoistureSensor();
-        UARTprintf("moisture : %4d\n", moisture);
+        UARTprintf("Soil Moisture : %4d\n", moisture);
 
 
-        PrintCounters();
-        
-        //SysCtlDelay(SysCtlClockGet() / 600);
+
+        #ifdef DEBUG
+            PrintCounters();
+        #endif
+        SysCtlDelay(SysCtlClockGet() / 10);
 
     }
 

@@ -89,6 +89,11 @@ all: ${COMPILER}/${PROJECT_NAME}.axf
 flash:
 	lm4flash gcc/${PROJECT_NAME}.bin 
 
+
+debug: CFLAGS += -D DEBUG
+debug: all
+
+
 #
 # The rule to clean out all the build products.
 #
@@ -100,6 +105,17 @@ clean:
 #
 ${COMPILER}:
 	@mkdir -p ${COMPILER}
+
+#
+#Rules for building guru.o
+#
+${COMPILER}/guru.o: ${ROOT}/driverlib/${COMPILER}/libdriver.a
+${COMPILER}/guru.o: ${ROOT}/driverlib/${COMPILER}/ssi.o
+${COMPILER}/guru.o: ${ROOT}/driverlib/${COMPILER}/i2c.o
+${COMPILER}/guru.o: ${ROOT}/driverlib/${COMPILER}/uart.o
+${COMPILER}/guru.o: ${ROOT}/driverlib/${COMPILER}/gpio.o
+
+
 
 #
 # Rules for building the ${PROJECT_NAME} example.
@@ -115,6 +131,7 @@ ${COMPILER}/${PROJECT_NAME}.axf: project.ld
 SCATTERgcc_${PROJECT_NAME}=project.ld
 ENTRY_${PROJECT_NAME}=ResetISR
 CFLAGSgcc=-DTARGET_IS_TM4C123_RB1
+
 
 #
 # Include the automatically generated dependency files.
