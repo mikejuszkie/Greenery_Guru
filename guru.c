@@ -38,10 +38,11 @@ void Guru_Init(void)
     g_total_transactions=0;
 
     //
-    // Coinfigure LED 
+    // Coinfigure LEDS 
     //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+    GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, 
+        GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
 
     //
     // Enable processor interrupts.
@@ -52,9 +53,10 @@ void Guru_Init(void)
     //
     // Configure upstream and down stream UART interfaces
     // UART 4 : Upstream 
-    // UART 3 : Downstream
+    // UART 6 : Downstream
     // These interfaces are used to configure the device by a master device
     //
+
 
 	UARTprintf("Configuring Upstream UART...");
     // UART 4 : Upstream UART
@@ -66,19 +68,23 @@ void Guru_Init(void)
    UARTConfigSetExpClk(UPSTREAM_UART, SysCtlClockGet(), 115200,
        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
    UARTEnable(UPSTREAM_UART);
+   UARTIntRegister(UPSTREAM_UART,&Up_UART_Hand);
 	UARTprintf("DONE!\n");
 
-	UARTprintf("Configuring Downstream UART...");
-   // UART 3 : Downstream UART
-   SysCtlPeripheralEnable(SYSCTL_PERIPH_UART3);
-   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-   GPIOPinConfigure(GPIO_PC6_U3RX);
-   GPIOPinConfigure(GPIO_PC7_U3TX);
-   GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_6 | GPIO_PIN_7);
+
+    UARTprintf("Configuring Downstream UART...");
+   // UART 6 : Downstream UART
+   SysCtlPeripheralEnable(SYSCTL_PERIPH_UART6);
+   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+   GPIOPinConfigure(GPIO_PD4_U6RX);
+   GPIOPinConfigure(GPIO_PD5_U6TX);
+   GPIOPinTypeUART(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
    UARTConfigSetExpClk(DNSTREAM_UART, SysCtlClockGet(), 115200,
        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
    UARTEnable(DNSTREAM_UART);
-	UARTprintf("DONE!\n");
+   UARTIntRegister(DNSTREAM_UART,&Dn_UART_Hand);
+    UARTprintf("DONE!\n");
+
 
 
 	UARTprintf("Configuring Slave I2C insterface...");
@@ -196,16 +202,13 @@ void Guru_Init(void)
 int I2C_Scan(void)
 {
 
-    //
-    // Clear screen before showing devices found
-    //
-    UARTprintf("\033[2J");
+
 
     int devices_found = 0;
 
     UARTprintf("Scanning I2C Bus\n\n");
 
-    for (int i = 0; i < 128; ++i)
+    for (int i = 1; i < 128; ++i)
     {
 
 
@@ -589,4 +592,112 @@ int PrintCounters()
 
 }
 
+int Guru_POST()
+{
 
+    //
+    // Clear screen before running POST
+    //
+    UARTprintf("\033[2J");
+
+    UARTprintf("\n\n############### Begin POST ###################\n");
+
+    UARTprintf("UP stream UART Loopback test -> ");
+    if(UART_Loopback(UPSTREAM_UART))
+        UARTprintf("Pass!\n");
+    else
+        UARTprintf("Fail!\n");
+
+    UARTprintf("Down stream UART Loopback test -> ");
+        if(UART_Loopback(DNSTREAM_UART))
+        UARTprintf("Pass!\n");
+    else
+        UARTprintf("Fail!\n");
+
+    I2C_Scan();
+}
+
+bool UART_Loopback(uint32_t UARTBus)
+{
+    char testchar = 'a';
+    for (int i = 0; i < 51; ++i)
+    {
+
+
+        UARTCharPutNonBlocking(UARTBus, testchar);
+        while(!UARTCharsAvail(UARTBus)){}
+            if(testchar!=(char)UARTCharGet(UARTBus))
+                return false;
+
+        switch(testchar){
+            case 'z' :
+                testchar = 'A';
+                break;
+            case 'Z' :
+                testchar = 'a';
+                break;
+            default :
+            testchar++;
+        }
+    }
+
+return true;
+}
+
+
+void Up_UART_Hand()
+{
+    GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_0, 0xF);
+    char tempchar;
+    char command[8];
+    int i = 0;
+    
+    while(UARTCharsAvail(UPSTREAM_UART))
+    {
+        tempchar = UARTCharGet(UPSTREAM_UART);
+        UARTCharPut(DNSTREAM_UART, tempchar);
+        command[i]=tempchar;
+        i++;
+    }
+    
+    if(strcmp(command,"setA5\r\n"))
+    {
+        GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_2, 0xF);
+        UARTprintf("Lets gooo!!!!");
+        SysCtlDelay(SysCtlClockGet() );
+    }
+    else if (command == "pinall")
+    {
+        UARTPingChain();
+    }
+            
+
+    UARTIntClear( UPSTREAM_UART , 0xFFF );
+    //GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_0, 0x0);
+    return;
+}
+
+
+void Dn_UART_Hand()
+{
+    GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_1, 0xf);
+    char tempchar;
+
+    while(UARTCharsAvail(DNSTREAM_UART))
+    {
+        tempchar = UARTCharGet(DNSTREAM_UART);
+        UARTCharPut(UPSTREAM_UART, tempchar);
+    }
+
+    UARTIntClear( DNSTREAM_UART , 0xFFF );
+    //GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_1, 0x0);
+    return;
+}
+
+void UARTPingChain()
+{
+    UARTprintf("PING ALL");
+    SysCtlDelay(SysCtlClockGet() );
+
+    return;
+}

@@ -21,7 +21,7 @@ uint32_t pui32ADC0Value;
 
 #define DEBUG_UART					UART0_BASE
 #define UPSTREAM_UART				UART4_BASE
-#define DNSTREAM_UART				UART3_BASE
+#define DNSTREAM_UART				UART6_BASE
 #define BAUD_RATE					115200
 
 #define I2C_SLAVE					I2C0_BASE
@@ -97,5 +97,18 @@ extern uint32_t CheckLightSensor();
 extern uint16_t CheckMoistureSensor();
 
 extern int PrintCounters();
+
+extern int Guru_POST(void);
+
+extern bool UART_Loopback(uint32_t UARTBus);
+
+extern void Up_UART_Hand(void);
+
+extern void Dn_UART_Hand(void);
+
+extern void UARTPingChain(void);
+
+
+
 
 #endif

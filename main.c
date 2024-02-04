@@ -116,15 +116,6 @@ main(void)
     SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ |
                        SYSCTL_OSC_MAIN);
 
-    //
-    // Enable the GPIO port that is used for the on-board LED.
-    //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-
-    //
-    // Enable the GPIO pins for the LED (PF2 & PF3).
-    //
-    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
 
     //
     // Initialize the UART.
@@ -142,17 +133,21 @@ main(void)
     // Initialize Guru Interfaces
     //
     Guru_Init();
-    SysCtlDelay(SysCtlClockGet()/3);
+    //SysCtlDelay(SysCtlClockGet()/3);
 
 
     //
-    // Scan For I2C devices 
+    // Power On Self Test 
     //
-    I2C_Scan();
-    SysCtlDelay(SysCtlClockGet() / 5 );
+    #ifdef DEBUG
+        Guru_POST();
+    #endif
+    //SysCtlDelay(SysCtlClockGet() );
 
+    UARTIntEnable( UPSTREAM_UART, UART_INT_RX );
+    UARTIntEnable( DNSTREAM_UART, UART_INT_RX );
 
-    char loop_var='g';
+    char loop_var='a';
     
     int16_t Tempature = 0;
     //float Tempature = 0;
@@ -161,7 +156,9 @@ main(void)
     uint16_t i2c_error_code=0;
     uint32_t brightness = 0;
     uint16_t moisture = 0;
-
+    char up_char;
+    char dn_char;
+    uint8_t LED = 0b0000;
 
     I2CMasterErr(I2C_MASTER);
 
@@ -186,13 +183,16 @@ main(void)
 
     */
 
+
+    GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3,
+        0b0000);
     while(1)
     {
-
+    GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3,
+        0b1000);
         
-
-        UARTCharPutNonBlocking(UART4_BASE, loop_var);
-
+UARTprintf("\033[2J");
+        
 
         if (g_i2c_device_pres & DS1621_PRES)
         {
@@ -208,7 +208,6 @@ main(void)
             g_total_transactions++;
         }
 
-
         I2C_Error_Check(i2c_error_code);
 
 
@@ -216,15 +215,38 @@ main(void)
         
         SSIDataPut(SPI_EEPROM, 0x9000 );
         //SSIDataGet(SPI_EEPROM, &brightness);
+        
+        
+        //UARTCharPut(UPSTREAM_UART, loop_var);
+        //if(UARTCharsAvail(UPSTREAM_UART))
+        //    up_char=(char)UARTCharGet(UPSTREAM_UART);
 
+        //UARTCharPutNonBlocking(DNSTREAM_UART, loop_var);
+        //if(UARTCharsAvail(DNSTREAM_UART))
+        //    dn_char=(char)UARTCharGet(DNSTREAM_UART);
+        
+        switch(loop_var){
+            case 'z' :
+                loop_var = 'A';
+                break;
+            case 'Z' :
+                loop_var = 'a';
+                break;
+            default :
+            loop_var++;
+        }
 
-        UARTprintf("\033[2J");
+        
         UARTprintf("Greenery Guru\n\n");
         UARTprintf("Tempature : %d C\n", Tempature);
         UARTprintf("Humidity : %d %%\n", Humidity);
 
         UARTprintf("Soil Tempature : %d C\n", Tempature2);
         UARTprintf("brightness : %d  \n", brightness);
+
+
+        UARTprintf("UP_CHAR : %c\n", up_char);
+        UARTprintf("DN_CHAR : %c\n", dn_char);
 
         ADCProcessorTrigger(ADC0_BASE,0);
         while(!ADCIntStatus(ADC0_BASE, 0, false)){}
@@ -241,7 +263,10 @@ main(void)
         #ifdef DEBUG
             PrintCounters();
         #endif
-        SysCtlDelay(SysCtlClockGet() / 10);
+        SysCtlDelay(SysCtlClockGet()/1);
+    GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3,
+        0b0000);
+
 
     }
 
